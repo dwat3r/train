@@ -15,9 +15,12 @@ object Faberge {
 //
 //  }
   // n: eggs, k: tries -> floors
-  def height(n : Int, m : Int) : Int = {
-    if ( m == 0 || n == 0)  0
-    else 1 + Math.max(height(n - 1, m - 1), height(n, m - 1))
+  def height(n : Int, d : Int) : Int = {
+    (1 to n).map(i => choose(d,i)).reduceLeft(_ + _)
+  }
+
+  def choose(n : Int, k : Int) : Int = {
+    (1 to k).map(i => (n + 1 - i / i)).reduceLeft(_ * _)
   }
 
   lazy val eggDrop : ((Int, Int)) => Int = memoize {
