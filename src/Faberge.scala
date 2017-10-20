@@ -11,17 +11,20 @@ object Faberge {
   def divisors(n : Int) = (1 to n/2).filter(i => n % i == 0)
 
 
-//  def height(n: BigInteger, m: BigInteger): BigInteger = {
-//
-//  }
-  // n: eggs, k: tries -> floors
+  def height(n: BigInteger, m: BigInteger): BigInteger = {
+    n //(1 to n)
+  }
+
   def height(n : Int, d : Int) : Int = {
-    (1 to n).map(i => choose(d,i)).reduceLeft(_ + _)
+    (1 to n).map(i => choose(d,i)).sum
   }
 
   def choose(n : Int, k : Int) : Int = {
-    (1 to k).map(i => (n + 1 - i / i)).reduceLeft(_ * _)
+    if (k == 0) 1
+    else if(k > n / 2) choose(n, n - k)
+    else n * choose(n - 1, k - 1) / k
   }
+
 
   lazy val eggDrop : ((Int, Int)) => Int = memoize {
     case (_, k) if k <= 1 => k
