@@ -1,58 +1,72 @@
 import scala.collection._
 
 object UphillPaths {
-  def modPow(b : Int, e : Int, m : Int) : Int = {
-    var c = 1
-    var ee = 0
-    while(ee < e){
-      ee += 1
-      c = b * c % m
-    }
-    c
+  def time[R](block: => R): R = {
+    val t0 = System.currentTimeMillis()
+    val result = block    // call-by-name
+    val t1 = System.currentTimeMillis()
+    println("Elapsed time: " + (t1 - t0) + "ms")
+    result
   }
 
-  def points(n : Int) : SortedMap[(Int,Int),mutable.Set[(Int,Int)]] = {
-    var ps = Set((0,0)) ++
-      (0 to 2*n).map(i => (modPow(2,i,n),modPow(3,i,n))).toSet ++
-      Set((n,n))
-    var ret = SortedMap[(Int,Int),mutable.Set[(Int,Int)]]()
-    for (p <- ps){
-        ret += (p -> mutable.Set())
-        for (p2 <- ps){
-          if (p != p2 && p2._1 >= p._1 && p2._2 >= p._2){
-            ret(p) += p2
-          }
+  def points(n : Int) : SortedSet[(Int, Int)] = {
+    var ps = SortedSet[(Int, Int)]((0, 0), (n, n))
+    var i = 0
+    var p = (1, 1)
+    while(i <= 2*n) {
+      p = (2 * p._1 % n, 3 * p._2 % n)
+      if (ps.contains(p)) i = 2 * n + 1
+      else ps += p
+      i += 1
+    }
+    ps
+    }
+
+  def maxPath(n : Int) :  Seq[(Int, Int)] = {
+    var ps = points(n)
+    //maxPathRec(ps.toSeq, 0)
+    var paths = mutable.Seq[mutable.Seq[(Int,Int)]]()
+    paths +: Seq(ps.head)
+    ps = ps.tail
+    while (!ps.empty){
+      val p = ps.head
+      for (path <- paths){
+        if (path.last._1 <= p._1 && path.last._2 <= p._2){
+          path = path +: p
+        }
+        else {
+          paths +: (path.filter(_ > p) +: p)
         }
       }
-      ret
-    }
-  // build dag effectively then
-  // determine max path by doing:
-  // 1. Topologically sort G into L;
-  //  3. Set the distances to all other vertices to infinity;
-  //  2. Set the distance to the source to 0;
-  //  4. For each vertex u in L
-  //  5.    - Walk through all neighbors v of u;
-  //  6.    - If dist(v) > dist(u) + w(u, v)
-  //  7.       - Set dist(v) <- dist(u) + w(u, v);
-  def maxpath(n : Int) : Int = {
-    var ps = points(n)
-    var dist = mutable.Map[(Int,Int),Int]()
-    for (p <- ps.keys) dist += (p -> 0)
 
-
-    for(u <- ps) {
-      for (v <- u._2) {
-        if(dist(v) <= dist(u._1))
-          dist(v) = dist(u._1) + 1
-      }
     }
-    dist((n,n)) - 1
+  }
+
+  // todo backtracking algo
+  def maxPathRec(in : Seq[(Int,Int)], i : Int) : Seq[(Int,Int)] = {
+    if (i == in.length - 1 || i < 0) Seq()
+    else if (in(i)._1 <= in(i+1)._1 && in(i)._2 <= in(i+1)._2){
+      in(i) +: maxPathRec(in, i + 1)
+    }
+    else {
+      in.take(i).filter(_ > in(i))
+      //maxPathRec(in.filter{ _ => j = j+1; j != i }, i - 1)
+    }
   }
 
   def test() = {
-    println(maxpath(22))
-    println(maxpath(123))
-    println(maxpath(10000))
+    println(points(4))
+    //println(points(22))
+    //println(time{maxPath(22)})
+    println(points(123))
+    println(time{maxPath(123)})
+    //println(time{maxpath(10000)})
+//    for (i <- 1 to 3) {
+//      var v = scala.math.pow(i, 5).toInt
+//      println("---")
+//      println(v)
+//      println(time{points(v)})
+//      //println(time {maxpath(v)})
+//    }
   }
 }
