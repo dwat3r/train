@@ -11,10 +11,20 @@ object UphillPaths {
     c
   }
 
-  def points(n : Int) : SortedSet[(Int,Int)] = {
-        SortedSet[(Int,Int)]() ++ Set((0,0)) ++
-        (0 to 2*n).map(i => (modPow(2,i,n),modPow(3,i,n))).toSet ++
-        Set((n,n))
+  def points(n : Int) : SortedMap[(Int,Int),mutable.Set[(Int,Int)]] = {
+    var ps = Set((0,0)) ++
+      (0 to 2*n).map(i => (modPow(2,i,n),modPow(3,i,n))).toSet ++
+      Set((n,n))
+    var ret = SortedMap[(Int,Int),mutable.Set[(Int,Int)]]()
+    for (p <- ps){
+        ret += (p -> mutable.Set())
+        for (p2 <- ps){
+          if (p != p2 && p2._1 >= p._1 && p2._2 >= p._2){
+            ret(p) += p2
+          }
+        }
+      }
+      ret
     }
   // build dag effectively then
   // determine max path by doing:
@@ -25,26 +35,24 @@ object UphillPaths {
   //  5.    - Walk through all neighbors v of u;
   //  6.    - If dist(v) > dist(u) + w(u, v)
   //  7.       - Set dist(v) <- dist(u) + w(u, v);
-  def maxpath(n : Int) : Set[(Int,Int)] = {
-    var path = Set[(Int,Int)]()
-    for{
-      p1 <- points(n)
-      p2 <- points(n)
-      }{
-      if(p1._1 >= p2._1 && p1._2 >= p2._2) {
+  def maxpath(n : Int) : Int = {
+    var ps = points(n)
+    var dist = mutable.Map[(Int,Int),Int]()
+    for (p <- ps.keys) dist += (p -> 0)
 
+
+    for(u <- ps) {
+      for (v <- u._2) {
+        if(dist(v) <= dist(u._1))
+          dist(v) = dist(u._1) + 1
       }
-
     }
-    //pathsRec(points(n))
-    ret
-  }
-
-  def pathsRec(s : Set[(Int, Int)]) : Int = {
-    0
+    dist((n,n)) - 1
   }
 
   def test() = {
-    println(points(22))
+    println(maxpath(22))
+    println(maxpath(123))
+    println(maxpath(10000))
   }
 }
