@@ -1,5 +1,10 @@
 import scala.collection._
 
+abstract class Tree[A]{
+  def value : A
+  def children: List[Tree[A]]
+}
+
 object UphillPaths {
   def time[R](block: => R): R = {
     val t0 = System.currentTimeMillis()
@@ -23,31 +28,25 @@ object UphillPaths {
     }
 
   def maxPath(n : Int) :  Int = {
-    maxPathImp(n).maxBy(_.length).length - 2
+    maxPathImp(n).length - 2
   }
 
-  def maxPathImp(n : Int) : mutable.ListBuffer[mutable.ListBuffer[(Int,Int)]]  = {
+  def maxPathImp(n : Int) : mutable.ListBuffer[(Int,Int)]  = {
     var ps = points(n)
-    //maxPathRec(ps.toSeq, 0)
-    var paths = mutable.ListBuffer[mutable.ListBuffer[(Int,Int)]](mutable.ListBuffer(ps.head))
+    var path = mutable.ListBuffer[(Int,Int)](ps.head)
     ps = ps.tail
     while (!ps.isEmpty){
       val p = ps.head
-      var needsBranching = false
-      for (path <- paths){
         if (path.last != p && path.last._1 <= p._1 && path.last._2 <= p._2){
           path += p
         }
         else {
-          needsBranching = true
+          path = path.filter(i => i != p && i._1 <= p._1 && i._2 <= p._2) :+ p
         }
-      }
-      if (needsBranching)
-        paths += paths.map(_.filter(i => i != p && i._1 <= p._1 && i._2 <= p._2)).maxBy(_.length) :+ p
 
       ps = ps.tail
     }
-    paths
+    path
   }
 
   // todo backtracking algo
@@ -71,8 +70,7 @@ object UphillPaths {
     if (wrongs.isEmpty) true
     else {
       for (wrong <- wrongs){
-        println(maxPath(wrong))
-        println(maxPathImp(wrong))
+        println(s"$wrong: ${maxPath(wrong)}, ${points(wrong)},\n ${maxPathImp(wrong)}")
         println("---")
       }
       false
@@ -80,7 +78,7 @@ object UphillPaths {
   }
 
   def test() = {
-    val correct = true//correctnessTest()
+    val correct = correctnessTest()
     println(s"is correct: $correct")
     if (correct) {
       println(maxPathImp(123))
