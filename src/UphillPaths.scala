@@ -10,7 +10,7 @@ object UphillPaths {
   }
 
   def points(n : Int) : SortedSet[(Int, Int)] = {
-    var ps = SortedSet[(Int, Int)]((0, 0), (n, n))
+    var ps = SortedSet[(Int, Int)]((0, 0), (1, 1), (n, n))
     var i = 0
     var p = (1, 1)
     while(i <= 2*n) {
@@ -22,51 +22,80 @@ object UphillPaths {
     ps
     }
 
-  def maxPath(n : Int) :  Seq[(Int, Int)] = {
+  def maxPath(n : Int) :  Int = {
+    maxPathImp(n).maxBy(_.length).length - 2
+  }
+
+  def maxPathImp(n : Int) : mutable.ListBuffer[mutable.ListBuffer[(Int,Int)]]  = {
     var ps = points(n)
     //maxPathRec(ps.toSeq, 0)
-    var paths = mutable.Seq[mutable.Seq[(Int,Int)]]()
-    paths +: Seq(ps.head)
+    var paths = mutable.ListBuffer[mutable.ListBuffer[(Int,Int)]](mutable.ListBuffer(ps.head))
     ps = ps.tail
-    while (!ps.empty){
+    while (!ps.isEmpty){
       val p = ps.head
+      var needsBranching = false
       for (path <- paths){
-        if (path.last._1 <= p._1 && path.last._2 <= p._2){
-          path = path +: p
+        if (path.last != p && path.last._1 <= p._1 && path.last._2 <= p._2){
+          path += p
         }
         else {
-          paths +: (path.filter(_ > p) +: p)
+          needsBranching = true
         }
       }
+      if (needsBranching)
+        paths += paths.map(_.filter(i => i != p && i._1 <= p._1 && i._2 <= p._2)).maxBy(_.length) :+ p
 
+      ps = ps.tail
     }
+    paths
   }
 
   // todo backtracking algo
-  def maxPathRec(in : Seq[(Int,Int)], i : Int) : Seq[(Int,Int)] = {
-    if (i == in.length - 1 || i < 0) Seq()
-    else if (in(i)._1 <= in(i+1)._1 && in(i)._2 <= in(i+1)._2){
-      in(i) +: maxPathRec(in, i + 1)
-    }
+//  def maxPathRec(in : Seq[(Int,Int)], i : Int) : Seq[(Int,Int)] = {
+//    if (i == in.length - 1 || i < 0) Seq()
+//    else if (in(i)._1 <= in(i+1)._1 && in(i)._2 <= in(i+1)._2){
+//      in(i) +: maxPathRec(in, i + 1)
+//    }
+//    else {
+//      //in.take(i).filter(_ > in(i))
+//      var j = 0
+//      maxPathRec(in.filter{ _ => j = j+1; j != i }, i - 1)
+//    }
+//  }
+
+  def correctnessTest() : Boolean = {
+    var wrongs = mutable.ListBuffer[Int]()
+    if(maxPath(22) != 5)    {wrongs += 22}
+    if(maxPath(123) != 14)  {wrongs += 123}
+    if(maxPath(10000) != 48){wrongs += 10000}
+    if (wrongs.isEmpty) true
     else {
-      in.take(i).filter(_ > in(i))
-      //maxPathRec(in.filter{ _ => j = j+1; j != i }, i - 1)
+      for (wrong <- wrongs){
+        println(maxPath(wrong))
+        println(maxPathImp(wrong))
+        println("---")
+      }
+      false
     }
   }
 
   def test() = {
-    println(points(4))
-    //println(points(22))
-    //println(time{maxPath(22)})
-    println(points(123))
-    println(time{maxPath(123)})
-    //println(time{maxpath(10000)})
-//    for (i <- 1 to 3) {
-//      var v = scala.math.pow(i, 5).toInt
-//      println("---")
-//      println(v)
-//      println(time{points(v)})
-//      //println(time {maxpath(v)})
-//    }
+    val correct = true//correctnessTest()
+    println(s"is correct: $correct")
+    if (correct) {
+      println(maxPathImp(123))
+      val v = scala.math.pow(7, 5).toInt
+      println(points(v))
+      println(points(v).size)
+      println(time {maxPath(v)})
+//
+//      for (i <- 1 to 7) {
+//        val v = scala.math.pow(i, 5).toInt
+//        println(v)
+//        time {points(v)}
+//        println(time {maxPath(v)})
+//        println("---")
+//      }
+    }
   }
 }
