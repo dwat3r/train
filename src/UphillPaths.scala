@@ -1,8 +1,18 @@
 import scala.collection._
 
-abstract class Tree[A]{
-  def value : A
-  def children: List[Tree[A]]
+case class Node[A](value : A, parent: Option[Node[A]] = None, children: List[Node[A]] = Nil){
+  def makeChild(value : A) = {
+    lazy val newParent: Node[A] = Node(this.value, this.parent, kid :: this.children)
+    lazy val kid: Node[A] = Node(value, Some(newParent), Nil)
+    kid
+  }
+}
+
+case class P(x : Int = 0, y : Int = 0)
+
+class Tree{
+  val root : Node[P]
+  Tree()
 }
 
 object UphillPaths {
@@ -14,12 +24,12 @@ object UphillPaths {
     result
   }
 
-  def points(n : Int) : SortedSet[(Int, Int)] = {
-    var ps = SortedSet[(Int, Int)]((0, 0), (1, 1), (n, n))
+  def points(n : Int) : SortedSet[P] = {
+    var ps = SortedSet[P](P(0, 0), P(1, 1), P(n, n))
     var i = 0
-    var p = (1, 1)
+    var p = P(1, 1)
     while(i <= 2*n) {
-      p = (2 * p._1 % n, 3 * p._2 % n)
+      p = P(2 * p.x % n, 3 * p.y % n)
       if (ps.contains(p)) i = 2 * n + 1
       else ps += p
       i += 1
@@ -31,26 +41,30 @@ object UphillPaths {
     maxPathImp(n).length - 2
   }
 
-  def maxPathImp(n : Int) : mutable.ListBuffer[(Int,Int)]  = {
+  def maxPathImp(n : Int) : Node[P]  = {
     var ps = points(n)
-    var path = mutable.ListBuffer[(Int,Int)](ps.head)
+    val root = Node[P](ps.head)
+    var frontier = List[Node[P]](root)
     ps = ps.tail
     while (!ps.isEmpty){
       val p = ps.head
-        if (path.last != p && path.last._1 <= p._1 && path.last._2 <= p._2){
-          path += p
+      for (pp <- frontier) {
+        if (pp.value.x <= p.x && pp.value.y <= p.y) {
+          pp = pp.makeChild(p)
         }
         else {
           path = path.filter(i => i != p && i._1 <= p._1 && i._2 <= p._2) :+ p
+          frontier = kid :: frontier
         }
+      }
 
       ps = ps.tail
     }
-    path
+    root
   }
 
   // todo backtracking algo
-//  def maxPathRec(in : Seq[(Int,Int)], i : Int) : Seq[(Int,Int)] = {
+//  def maxPathRec(in : Seq[P], i : Int) : Seq[P] = {
 //    if (i == in.length - 1 || i < 0) Seq()
 //    else if (in(i)._1 <= in(i+1)._1 && in(i)._2 <= in(i+1)._2){
 //      in(i) +: maxPathRec(in, i + 1)
