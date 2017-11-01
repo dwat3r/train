@@ -1,18 +1,37 @@
+import scala.annotation.tailrec
 import scala.collection._
 
-case class Node[A](value : A, parent: Option[Node[A]] = None, children: List[Node[A]] = Nil){
-  def makeChild(value : A) = {
-    lazy val newParent: Node[A] = Node(this.value, this.parent, kid :: this.children)
-    lazy val kid: Node[A] = Node(value, Some(newParent), Nil)
+class Node[A](var value : A, val parent : Option[Node[A]] = None, var children : List[Node[A]] = Nil){
+
+  def makeChild(value : A) : Node[A] = {
+    val kid: Node[A] = new Node(value, Some(this), Nil)
+    this.children = kid :: this.children
     kid
+  }
+  def maxDepth() : Int = {
+    this.children match {
+      case Nil => 1
+      case l : List[Node[A]] => 1 + l.map(_.maxDepth).max
+    }
+  }
+
+  // todo: pretty toString for debugging
+  override def toString: String = {
+    "(" + this.value + ": " + this.children.map(_.toString) + ")"
+  }
+  def toPrettyString : String = {
+    toPrettyRec(0)
+  }
+  def toPrettyRec(d : Int) : String = {
+    " " * d + this.value + "\n" + this.children.map(_.toPrettyRec(d + 1)).mkString
   }
 }
 
-case class P(x : Int = 0, y : Int = 0)
 
-class Tree{
-  val root : Node[P]
-  Tree()
+case class P(x : Int = 0, y : Int = 0) extends Ordered[P]{
+  import scala.math.Ordered.orderingToOrdered
+
+  def compare(that: P): Int = (this.x, this.y) compare (that.x, that.y)
 }
 
 object UphillPaths {
@@ -38,26 +57,38 @@ object UphillPaths {
     }
 
   def maxPath(n : Int) :  Int = {
-    maxPathImp(n).length - 2
+    maxPathImp(n).maxDepth - 2
   }
 
   def maxPathImp(n : Int) : Node[P]  = {
     var ps = points(n)
-    val root = Node[P](ps.head)
-    var frontier = List[Node[P]](root)
+    val root = new Node[P](ps.head)
+    // node, depth
+    var frontier = mutable.ArrayBuffer[(Node[P],Int)]((root,0))
     ps = ps.tail
     while (!ps.isEmpty){
       val p = ps.head
-      for (pp <- frontier) {
-        if (pp.value.x <= p.x && pp.value.y <= p.y) {
-          pp = pp.makeChild(p)
-        }
-        else {
-          path = path.filter(i => i != p && i._1 <= p._1 && i._2 <= p._2) :+ p
-          frontier = kid :: frontier
+      var found = false
+      for (i <- frontier.indices) {
+        var (cp, depth) = frontier(i)
+        var newp: Option[Node[P]] = None
+        if (cp.value.x <= p.x && cp.value.y <= p.y) {
+          frontier(i) = (cp.makeChild(p), depth + 1)
+          found = true
         }
       }
-
+      var (longest, depth) = frontier.last
+      var cp = longest.parent; depth -= 1
+      while(!found) {
+        cp match {
+          case Some(pp) if pp.value.x <= p.x && pp.value.y <= p.y => {
+            found = true
+            frontier += ((pp.makeChild(p), depth + 1))
+          }
+          case Some(pp) => {cp = pp.parent; depth -= 1}
+          case None => printf(s"impossible: $cp")
+        }
+      }
       ps = ps.tail
     }
     root
@@ -84,7 +115,7 @@ object UphillPaths {
     if (wrongs.isEmpty) true
     else {
       for (wrong <- wrongs){
-        println(s"$wrong: ${maxPath(wrong)}, ${points(wrong)},\n ${maxPathImp(wrong)}")
+        println(s"$wrong: ${maxPath(wrong)}, ${points(wrong)},\n" + maxPathImp(wrong).toPrettyString)
         println("---")
       }
       false
