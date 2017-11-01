@@ -66,28 +66,39 @@ object UphillPaths {
     // node, depth
     var frontier = mutable.ArrayBuffer[(Node[P],Int)]((root,0))
     ps = ps.tail
-    while (!ps.isEmpty){
+    while (ps.nonEmpty){
       val p = ps.head
-      var found = false
+      var needsBranching = false
+      var newBranch = (new Node[P](P(-1,-1)),0)
       for (i <- frontier.indices) {
-        var (cp, depth) = frontier(i)
-        var newp: Option[Node[P]] = None
+        val (cp, depth) = frontier(i)
         if (cp.value.x <= p.x && cp.value.y <= p.y) {
           frontier(i) = (cp.makeChild(p), depth + 1)
-          found = true
+        }
+        else{
+          needsBranching = true
+          var (cb, depth) = frontier(i)
+          var cp = cb.parent;
+          depth -= 1
+          var inserted = false
+          while (!inserted) {
+            cp match {
+              case Some(pp) if pp.value.x <= p.x && pp.value.y <= p.y => {
+                if (newBranch._2 < depth + 1) {
+                  newBranch = (pp.makeChild(p), depth + 1)
+                }
+                inserted = true
+              }
+              case Some(pp) => {
+                cp = pp.parent; depth -= 1
+              }
+              case None => printf(s"impossible: $cp")
+            }
+          }
         }
       }
-      var (longest, depth) = frontier.last
-      var cp = longest.parent; depth -= 1
-      while(!found) {
-        cp match {
-          case Some(pp) if pp.value.x <= p.x && pp.value.y <= p.y => {
-            found = true
-            frontier += ((pp.makeChild(p), depth + 1))
-          }
-          case Some(pp) => {cp = pp.parent; depth -= 1}
-          case None => printf(s"impossible: $cp")
-        }
+      if(needsBranching) {
+        frontier += newBranch
       }
       ps = ps.tail
     }
