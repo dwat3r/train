@@ -57,10 +57,10 @@ object UphillPaths {
     }
 
   def maxPath(n : Int) :  Int = {
-    maxPathImp(n).maxDepth - 2
+    maxPathImp(n)
   }
-
-  def maxPathImp(n : Int) : Node[P]  = {
+  // todo: implement DAG instead of roseTree, or cut out short paths
+  def maxPathImp(n : Int) : Int  = {
     var ps = points(n)
     val root = new Node[P](ps.head)
     // node, depth
@@ -70,22 +70,23 @@ object UphillPaths {
       val p = ps.head
       var needsBranching = false
       var newBranch = (new Node[P](P(-1,-1)),0)
+      var newElem = ((new Node[P](P(-1,-1)),0),-1)
       for (i <- frontier.indices) {
         val (cp, depth) = frontier(i)
         if (cp.value.x <= p.x && cp.value.y <= p.y) {
-          frontier(i) = (cp.makeChild(p), depth + 1)
+          if(newElem._1._2 < depth + 1)
+            newElem = ((cp, depth + 1), i)
         }
         else{
           needsBranching = true
           var (cb, depth) = frontier(i)
-          var cp = cb.parent;
-          depth -= 1
+          var cp = cb.parent; depth -= 1
           var inserted = false
           while (!inserted) {
             cp match {
               case Some(pp) if pp.value.x <= p.x && pp.value.y <= p.y => {
                 if (newBranch._2 < depth + 1) {
-                  newBranch = (pp.makeChild(p), depth + 1)
+                  newBranch = (pp, depth + 1)
                 }
                 inserted = true
               }
@@ -97,12 +98,16 @@ object UphillPaths {
           }
         }
       }
+      if (newElem._2 != -1){
+        frontier(newElem._2) = (newElem._1._1.makeChild(p), newElem._1._2)
+      }
       if(needsBranching) {
-        frontier += newBranch
+        frontier += ((newBranch._1.makeChild(p), newBranch._2))
       }
       ps = ps.tail
     }
-    root
+    //root
+    frontier.maxBy(_._2)._2 - 1
   }
 
   // todo backtracking algo
@@ -126,7 +131,7 @@ object UphillPaths {
     if (wrongs.isEmpty) true
     else {
       for (wrong <- wrongs){
-        println(s"$wrong: ${maxPath(wrong)}, ${points(wrong)},\n" + maxPathImp(wrong).toPrettyString)
+        println(s"$wrong: ${maxPath(wrong)}, ${points(wrong)},\n" )//+ maxPathImp(wrong).toPrettyString)
         println("---")
       }
       false
@@ -137,19 +142,18 @@ object UphillPaths {
     val correct = correctnessTest()
     println(s"is correct: $correct")
     if (correct) {
-      println(maxPathImp(123))
-      val v = scala.math.pow(7, 5).toInt
-      println(points(v))
-      println(points(v).size)
-      println(time {maxPath(v)})
+//      val v = scala.math.pow(7, 5).toInt
+//      println(points(v))
+//      println(points(v).size)
+//      println(time {maxPath(v)})
 //
-//      for (i <- 1 to 7) {
-//        val v = scala.math.pow(i, 5).toInt
-//        println(v)
-//        time {points(v)}
-//        println(time {maxPath(v)})
-//        println("---")
-//      }
+      for (i <- 1 to 30) {
+        val v = scala.math.pow(i, 5).toInt
+        println(v)
+        time {points(v)}
+        println(time {maxPath(v)})
+        println("---")
+      }
     }
   }
 }
