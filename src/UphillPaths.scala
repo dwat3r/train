@@ -1,19 +1,19 @@
 import scala.annotation.tailrec
 import scala.collection._
 
-class Node[A](var value : A, val parent : Option[Node[A]] = None, var children : List[Node[A]] = Nil){
+class Node[A](var value : A, val parent : Option[Node[A]] = None, var children : mutable.ArrayBuffer[Node[A]] = mutable.ArrayBuffer[Node[A]]()){
 
   def makeChild(value : A) : Node[A] = {
-    val kid: Node[A] = new Node(value, Some(this), Nil)
-    this.children = kid :: this.children
+    val kid: Node[A] = new Node(value, Some(this), mutable.ArrayBuffer[Node[A]]())
+    this.children += kid
     kid
   }
-  def maxDepth() : Int = {
-    this.children match {
-      case Nil => 1
-      case l : List[Node[A]] => 1 + l.map(_.maxDepth).max
-    }
-  }
+//  def maxDepth() : Int = {
+//    this.children match {
+//      case Nil => 1
+//      case l : List[Node[A]] => 1 + l.map(_.maxDepth).max
+//    }
+//  }
 
   // todo: pretty toString for debugging
   override def toString: String = {
@@ -64,17 +64,19 @@ object UphillPaths {
     var ps = points(n)
     val root = new Node[P](ps.head)
     // node, depth
-    var frontier = mutable.ArrayBuffer[(Node[P],Int)]((root,0))
+    var frontier = mutable.Map[Int,(Node[P],Int)](0 -> (root,0))
     ps = ps.tail
     while (ps.nonEmpty){
       val p = ps.head
       var needsBranching = false
       var newBranch = (new Node[P](P(-1,-1)),0)
       var newElem = ((new Node[P](P(-1,-1)),0),-1)
-      for (i <- frontier.indices) {
+      //var toCut = mutable.ArrayBuffer[Int]()
+      for (i <- frontier.keys) {
         val (cp, depth) = frontier(i)
-        if (cp.value.x <= p.x && cp.value.y <= p.y) {
-          if(newElem._1._2 < depth + 1)
+        if (cp.value.x <= p.x && cp.value.y <= p.y &&
+            newElem._1._2 < depth + 1) {
+            //toCut += newElem._2
             newElem = ((cp, depth + 1), i)
         }
         else{
@@ -100,14 +102,17 @@ object UphillPaths {
       }
       if (newElem._2 != -1){
         frontier(newElem._2) = (newElem._1._1.makeChild(p), newElem._1._2)
+//        for (i <- toCut){
+//          if (i >= 0) frontier.remove(i)
+        //}
       }
       if(needsBranching) {
-        frontier += ((newBranch._1.makeChild(p), newBranch._2))
+        frontier += (frontier.size -> (newBranch._1.makeChild(p), newBranch._2))
       }
       ps = ps.tail
     }
     //root
-    frontier.maxBy(_._2)._2 - 1
+    frontier.values.maxBy(_._2)._2 - 1
   }
 
   // todo backtracking algo
